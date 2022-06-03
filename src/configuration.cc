@@ -59,6 +59,7 @@ void Config::CalculateSize() {
         ranks = channel_size / megs_per_rank;
         channel_size = ranks * megs_per_rank;
     }
+
     return;
 }
 
@@ -379,6 +380,9 @@ void Config::SetAddressMapping() {
     int pos = 0;
     while (!fields.empty()) {
         auto token = fields.back();
+
+        std::cout << "tok: " << token << " pos: " << pos << "\n";
+
         fields.pop_back();
         if (field_widths.find(token) == field_widths.end()) {
             std::cerr << "Unrecognized field: " << token << std::endl;
@@ -401,6 +405,23 @@ void Config::SetAddressMapping() {
     ba_mask = (1 << field_widths.at("ba")) - 1;
     ro_mask = (1 << field_widths.at("ro")) - 1;
     co_mask = (1 << field_widths.at("co")) - 1;
+
+
+    // std::cout << "SHIFT " << shift_bits << "\n";
+
+    // std::cout << "RO_POS " << ro_pos << "\n";
+    // std::cout << "CH_POS " << ch_pos << "\n";
+    // std::cout << "RA_POS " << ra_pos << "\n";
+    // std::cout << "BA_POS " << ba_pos << "\n";
+    // std::cout << "BG_POS " << bg_pos << "\n";
+    // std::cout << "CO_POS " << co_pos << "\n";
+
+    // std::cout << "RO_MASK " << ro_mask << "\n";
+    // std::cout << "CH_MASK " << ch_mask << "\n";
+    // std::cout << "RA_MASK " << ra_mask << "\n";
+    // std::cout << "BA_MASK " << ba_mask << "\n";
+    // std::cout << "BG_MASK " << bg_mask << "\n";
+    // std::cout << "CO_MASK " << co_mask << "\n";
 }
 
 }  // namespace dramsim3
