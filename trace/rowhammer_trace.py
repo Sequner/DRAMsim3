@@ -10,7 +10,6 @@ def main(args):
     config = configparser.ConfigParser()    
     config.read(args.config)
 
-    nrows = int(config['dram_structure']['rows'])
     ncols = int(config['dram_structure']['columns'])
     bl = int(config['dram_structure']['BL'])
     nbankgroups = int(config['dram_structure']['bankgroups'])
@@ -28,7 +27,6 @@ def main(args):
     local_clock = 0
     
 
-    
     victims = generateVictims(nvictims, rowbits)
     
     while(local_clock<args.trace_duration):
