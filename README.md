@@ -79,7 +79,7 @@ python3 scripts/plot_stats dramsim3epoch.json
 ```
 python3 trace/rowhammer_trace.py --config ./configs/DDR4_8Gb_x8_3200.ini --nvictims 10 --output trace/rowhammer_trace.txt
 
-/build/dramsim3main configs/DDR4_8Gb_x8_3200.ini -c 100000 -t trace/rowhammer_trace -o ./outputs/
+./build/dramsim3main configs/DDR4_8Gb_x8_3200.ini -c 100000 -t trace/rowhammer_trace -o ./outputs/
 
 ```
 

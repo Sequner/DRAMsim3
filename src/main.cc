@@ -26,6 +26,7 @@ int main(int argc, const char **argv) {
         parser, "trace",
         "Trace file, setting this option will ignore -s option",
         {'t', "trace"});
+        
     args::Positional<std::string> config_arg(
         parser, "config", "The config file name (mandatory)");
 
