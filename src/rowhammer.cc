@@ -14,7 +14,7 @@ std::string rowhammer_preprocessing(std::string config_file, std::string trace_f
     unsigned int W = tREFW * (1 - cfg.tRFC/cfg.tREFI) / cfg.tRC; // max number of ACTs in a reset window
 
     // Graphene
-    unsigned int T = T_rh / 4;           // table threshold
+    int T = T_rh / 4;           // table threshold
     unsigned int N_entry = W / T + 1;    // number of entries in the table
     std::cout << "Reset Window in clock cycles: " << tREFW << "\n";
     std::cout << "Number of table entries: " << N_entry << "\n";
