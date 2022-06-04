@@ -380,9 +380,6 @@ void Config::SetAddressMapping() {
     int pos = 0;
     while (!fields.empty()) {
         auto token = fields.back();
-
-        std::cout << "tok: " << token << " pos: " << pos << "\n";
-
         fields.pop_back();
         if (field_widths.find(token) == field_widths.end()) {
             std::cerr << "Unrecognized field: " << token << std::endl;

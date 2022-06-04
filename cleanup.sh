@@ -1,0 +1,1 @@
+rm ./trace/rowhammer_trace ./trace/rowhammer_trace_protected ./outputs/*

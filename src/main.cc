@@ -51,7 +51,7 @@ int main(int argc, const char **argv) {
     std::string trace_file = args::get(trace_file_arg);
     std::string stream_type = args::get(stream_arg);
 
-    trace_file = rowhammer_preprocessing(config_file, trace_file);
+    trace_file = Graphene(config_file, trace_file);
 
     CPU *cpu;
     if (!trace_file.empty()) {
