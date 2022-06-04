@@ -3,7 +3,7 @@ import configparser
 import argparse
 
 dec2bin = lambda val, len: format(val, 'b').zfill(len)
-bin2hex = lambda val, len: format(val, 'h').zfill(len)
+
 
 
 def main(args):
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     parser.add_argument('--config', type=str, required=True)
     parser.add_argument('--trace_duration', type=int, default=100e6)
     parser.add_argument('--nvictims', type=int, default=1)
-    parser.add_argument('--output', type=str, default='./trace.txt')
+    parser.add_argument('--output', type=str, default='./rowhammer_trace')
     
     # parser.add_argument('--T', type=int, default = 50e3)
     
