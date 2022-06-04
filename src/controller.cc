@@ -50,7 +50,6 @@ std::pair<uint64_t, int> Controller::ReturnDoneTrans(uint64_t clk) {
                 simple_stats_.Increment("num_writes_done");
             } 
             else if(it->is_TRR){
-                std::cout << "TRR works \n";
                 simple_stats_.AddValue("read_latency", clk_ - it->added_cycle);
             }
             else{
