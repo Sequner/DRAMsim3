@@ -42,8 +42,8 @@ bool MemorySystem::WillAcceptTransaction(uint64_t hex_addr,
     return dram_system_->WillAcceptTransaction(hex_addr, is_write);
 }
 
-bool MemorySystem::AddTransaction(uint64_t hex_addr, bool is_write) {
-    return dram_system_->AddTransaction(hex_addr, is_write);
+bool MemorySystem::AddTransaction(uint64_t hex_addr, bool is_write, bool is_TRR) {
+    return dram_system_->AddTransaction(hex_addr, is_write, is_TRR);
 }
 
 void MemorySystem::PrintStats() const { dram_system_->PrintStats(); }
