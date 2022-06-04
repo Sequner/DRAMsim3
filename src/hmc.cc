@@ -340,6 +340,60 @@ bool HMCMemorySystem::WillAcceptTransaction(uint64_t hex_addr,
     return insertable;
 }
 
+bool HMCMemorySystem::AddTransaction(uint64_t hex_addr, bool is_write, bool is_TRR=false) {
+    // to be compatible with other protocol we have this interface
+    // when using this intreface the size of each transaction will be block_size
+    HMCReqType req_type;
+    if (is_write) {
+        switch (config_.block_size) {
+            case 0:
+                req_type = HMCReqType::WR0;
+                break;
+            case 32:
+                req_type = HMCReqType::WR32;
+                break;
+            case 64:
+                req_type = HMCReqType::WR64;
+                break;
+            case 128:
+                req_type = HMCReqType::WR128;
+                break;
+            case 256:
+                req_type = HMCReqType::WR256;
+                break;
+            default:
+                req_type = HMCReqType::SIZE;
+                AbruptExit(__FILE__, __LINE__);
+                break;
+        }
+    } else {
+        switch (config_.block_size) {
+            case 0:
+                req_type = HMCReqType::RD0;
+                break;
+            case 32:
+                req_type = HMCReqType::RD32;
+                break;
+            case 64:
+                req_type = HMCReqType::RD64;
+                break;
+            case 128:
+                req_type = HMCReqType::RD128;
+                break;
+            case 256:
+                req_type = HMCReqType::RD256;
+                break;
+            default:
+                req_type = HMCReqType::SIZE;
+                AbruptExit(__FILE__, __LINE__);
+                break;
+        }
+    }
+    int vault = GetChannel(hex_addr);
+    HMCRequest *req = new HMCRequest(req_type, hex_addr, vault);
+    return InsertHMCReq(req);
+}
+
 bool HMCMemorySystem::AddTransaction(uint64_t hex_addr, bool is_write) {
     // to be compatible with other protocol we have this interface
     // when using this intreface the size of each transaction will be block_size
