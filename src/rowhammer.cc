@@ -103,6 +103,7 @@ std::string Graphene_improved(std::string config_file, std::string trace_file) {
     int T = T_rh / 4;           // table threshold
     unsigned int N_entry = W / T + 1;    // number of entries in the table
     std::cout << "Reset Window in clock cycles: " << tREFW << "\n";
+    std::cout << "Number of ACTs in a reset window: " << W << "\n";
     std::cout << "Number of table entries: " << N_entry << "\n";
     std::cout << "Threshold: " << T << "\n";
 

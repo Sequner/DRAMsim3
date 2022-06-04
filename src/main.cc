@@ -11,7 +11,7 @@ int main(int argc, const char **argv) {
         "Examples: \n."
         "./build/dramsim3main configs/DDR4_8Gb_x8_3200.ini -c 100 -t "
         "sample_trace.txt\n"
-        "./build/dramsim3main configs/DDR4_8Gb_x8_3200.ini -s random -c 100");
+        "./build/dramsim3main configs/DDR4_8Gb_x8_3200.ini -s random -c 100 -r false");
     args::HelpFlag help(parser, "help", "Display the help menu", {'h', "help"});
     args::ValueFlag<uint64_t> num_cycles_arg(parser, "num_cycles",
                                              "Number of cycles to simulate",
@@ -26,6 +26,9 @@ int main(int argc, const char **argv) {
         parser, "trace",
         "Trace file, setting this option will ignore -s option",
         {'t', "trace"});
+    args::ValueFlag<bool> rhprot_arg(parser, "rhprot_enable", 
+                                                   "Enable rowhammer protection", 
+                                                   {'r', "rhprot-en"}, false);
     args::Positional<std::string> config_arg(
         parser, "config", "The config file name (mandatory)");
 
@@ -51,7 +54,8 @@ int main(int argc, const char **argv) {
     std::string trace_file = args::get(trace_file_arg);
     std::string stream_type = args::get(stream_arg);
 
-    trace_file = Graphene(config_file, trace_file);
+    if (args::get(rhprot_arg))
+        trace_file = Graphene(config_file, trace_file);
 
     CPU *cpu;
     if (!trace_file.empty()) {
