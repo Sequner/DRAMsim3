@@ -77,9 +77,14 @@ python3 scripts/plot_stats dramsim3epoch.json
 ### Rowhammer
 
 ```
+# Generate malicious access pattern
 python3 trace/rowhammer_trace.py --config ./configs/DDR4_8Gb_x8_3200.ini --nvictims 10 --output trace/rowhammer_trace
 
-./build/dramsim3main configs/DDR4_8Gb_x8_3200.ini -c 100000 -t trace/rowhammer_trace -o ./outputs/
+# Generate benign access pattern
+python3 benign_trace.py -n 100000000 -f dramsim3
+
+# run
+./build/dramsim3main configs/DDR4_8Gb_x8_3200.ini -r 1 -c 100000000 -t trace/rowhammer_trace -o ./outputs/ 
 
 ```
 
