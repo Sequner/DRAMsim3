@@ -33,6 +33,7 @@ SimpleStats::SimpleStats(const Config& config, int channel_id)
     InitStat("num_pre_cmds", "counter", "Number of PRE commands");
     InitStat("num_ondemand_pres", "counter", "Number of ondemend PRE commands");
     InitStat("num_ref_cmds", "counter", "Number of REF commands");
+    InitStat("num_trr_cmds", "counter", "Number of TRR commands");
     InitStat("num_refb_cmds", "counter", "Number of REFb commands");
     InitStat("num_srefe_cmds", "counter", "Number of SREFE commands");
     InitStat("num_srefx_cmds", "counter", "Number of SREFX commands");
@@ -43,6 +44,7 @@ SimpleStats::SimpleStats(const Config& config, int channel_id)
     InitStat("read_energy", "double", "Read energy");
     InitStat("write_energy", "double", "Write energy");
     InitStat("ref_energy", "double", "Refresh energy");
+    InitStat("trr_energy", "double", "Refresh energy");
     InitStat("refb_energy", "double", "Refresh-bank energy");
 
     // Vector counter stats
@@ -373,6 +375,10 @@ void SimpleStats::UpdateEpochStats() {
         epoch_counters_["num_write_cmds"] * config_.write_energy_inc;
     doubles_["ref_energy"] =
         epoch_counters_["num_ref_cmds"] * config_.ref_energy_inc;
+
+    doubles_["trr_energy"] = 
+        epoch_counters_["num_trr_cmds"] * config_.ref_energy_inc/config_.rows;
+
     doubles_["refb_energy"] =
         epoch_counters_["num_refb_cmds"] * config_.refb_energy_inc;
 
@@ -402,7 +408,7 @@ void SimpleStats::UpdateEpochStats() {
 
     double total_energy = doubles_["act_energy"] + doubles_["read_energy"] +
                           doubles_["write_energy"] + doubles_["ref_energy"] +
-                          doubles_["refb_energy"] + background_energy;
+                          doubles_["refb_energy"] + doubles_["trr_energy"] + background_energy;
     calculated_["total_energy"] = total_energy;
     calculated_["average_power"] = total_energy / epoch_counters_["num_cycles"];
     calculated_["average_read_latency"] =
@@ -433,6 +439,10 @@ void SimpleStats::UpdateFinalStats() {
     doubles_["write_energy"] =
         counters_["num_write_cmds"] * config_.write_energy_inc;
     doubles_["ref_energy"] = counters_["num_ref_cmds"] * config_.ref_energy_inc;
+
+    doubles_["trr_energy"] = 
+        counters_["num_trr_cmds"] * config_.ref_energy_inc/config_.rows;
+
     doubles_["refb_energy"] =
         counters_["num_refb_cmds"] * config_.refb_energy_inc;
 
@@ -463,7 +473,7 @@ void SimpleStats::UpdateFinalStats() {
 
     double total_energy = doubles_["act_energy"] + doubles_["read_energy"] +
                           doubles_["write_energy"] + doubles_["ref_energy"] +
-                          doubles_["refb_energy"] + background_energy;
+                          doubles_["refb_energy"] + doubles_["trr_energy"] + background_energy;
     calculated_["total_energy"] = total_energy;
     calculated_["average_power"] = total_energy / counters_["num_cycles"];
     // calculated_["average_read_latency"] = GetHistoAvg("read_latency");
