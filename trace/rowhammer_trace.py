@@ -34,13 +34,13 @@ def main(args):
             s = gethex(victims[i]-1, rowbits)
             line = s + " " + "READ" + " " + str(local_clock) + "\n"
             file.write(line)
-            local_clock += np.random.randint(10,100)
+            local_clock += 10
         
         for i in range((len(victims))):
             s = gethex(victims[i]+1, rowbits)
             line = s + " " + "READ" + " " + str(local_clock) + "\n"
             file.write(line)
-            local_clock += np.random.randint(10,100)
+            local_clock += 10
 
  
 

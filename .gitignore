@@ -3,6 +3,7 @@ build/
 debug_build/
 data/
 ext/SuperLU_MT_3.1/
+outputs/
 obj
 dramsim3
 dramsim3test
@@ -13,6 +14,9 @@ release
 *.pyc
 *.vh
 .vs/
+
+/trace
+!/trace/*.py
 
 # Compiled Object files
 *.slo
