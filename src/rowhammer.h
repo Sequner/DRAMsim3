@@ -1,3 +1,6 @@
+#ifndef __ROWHAMMER_H
+#define __ROWHAMMER_H
+
 #include <iostream>
 #include <sstream>
 #include "configuration.h"
@@ -5,10 +8,43 @@
 
 namespace dramsim3{
 
-    int find_min(std::map<int, int> table);
-    std::string Graphene(std::string config_file, std::string tracefile);
-    std::string Graphene_improved(std::string config_file, std::string tracefile);
-    std::string gethexaddress(int row, Config cfg);
-    std::string dec2hexa(unsigned int w);
+class RowhammerCounter {
+    public:
+        RowhammerCounter(std::string config_file, std::string trace_file, 
+                        float tREFW_ns, unsigned int T_rh);
+        virtual ~RowhammerCounter() {}
+        virtual void CreateTable();
+        virtual std::string TraverseTrace();
+        virtual void UpdateTable(int row);
+        std::string gethexaddress(int row, Config cfg);
+        std::string output_name;
+    protected:
+        Config cfg_;
+        std::ifstream trace_;
+        std::ofstream output_;
+        unsigned int tREFW_;
+        unsigned int T_rh_;
+        unsigned int W_;
+        unsigned int N_entries_;
+        std::map<int, int> table_;
+};
+
+class Graphene : public RowhammerCounter {
+    public:
+        Graphene(std::string config_file, std::string trace_file,
+                float tREFW_ns, unsigned int T_rh);
+        ~Graphene();
+        void CreateTable() override;
+        std::string TraverseTrace() override;
+        void UpdateTable(int row) override;
+        void CheckThresholds(int row, int clock_cycle);
+        void GenerateRefresh(int row, unsigned int clock_cycle);
+        void ResetTable(int row);
+        int find_min(std::map<int, int> table);
+    
+    protected:
+        unsigned int T_;
+};
 
 }
+#endif

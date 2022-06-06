@@ -2,182 +2,102 @@
 
 namespace dramsim3{
 
-std::string Graphene(std::string config_file, std::string trace_file) {
-    Config cfg = Config(config_file, "./");
-    std::ifstream trace = std::ifstream(trace_file);
-    // Assumptions
-    float tREFW_time = 64000000; // reset window in nanosec
-    unsigned int T_rh = 50000;            // Rowhammer threshold
+RowhammerCounter::RowhammerCounter(std::string config_file, 
+                                   std::string trace_file,
+                                   float tREFW_ns, unsigned int T_rh)
+    : cfg_(config_file, "./"),
+      trace_(trace_file),
+      output_(trace_file + "_protected"),
+      T_rh_(T_rh) {
+          std::cout << "Reset Window in nanoseconds: " << tREFW_ns << "\n";
+          tREFW_ = tREFW_ns / cfg_.tCK;
+          std::cout << "Reset Window in clock cycles: " << tREFW_ << "\n";
+          W_ = tREFW_ * (1 - cfg_.tRFC/cfg_.tREFI) / cfg_.tRC;
+          std::cout << "Max number of ACTs per Reset Window: " << W_ << "\n";
+          output_name = trace_file + "_protected";
+      }
 
-    // Calculating W
-    unsigned int tREFW = tREFW_time / cfg.tCK;                   // reset window in clock cycles
-    unsigned int W = tREFW * (1 - cfg.tRFC/cfg.tREFI) / cfg.tRC; // max number of ACTs in a reset window
+Graphene::Graphene(std::string config_file,
+                   std::string trace_file,
+                   float tREFW_ns, unsigned int T_rh)
+    : RowhammerCounter(config_file, trace_file, tREFW_ns, T_rh) {
+        T_ = T_rh / 4;
+        std::cout << "Threshold: " << T_ << "\n";
+    }
 
-    // Graphene
-    int T = T_rh / 4;           // table threshold
-    unsigned int N_entry = W / T + 1;    // number of entries in the table
-    std::cout << "Reset Window in clock cycles: " << tREFW << "\n";
-    std::cout << "Number of table entries: " << N_entry << "\n";
-    std::cout << "Threshold: " << T << "\n";
+Graphene::~Graphene() {
+    output_.close();
+    trace_.close();
+}
 
-    std::string output_file = trace_file + "_protected";
-    std::ofstream output = std::ofstream(output_file);
+void Graphene::CreateTable() {
+    N_entries_ = W_ / T_ + 1;
+    table_[-1] = 0;
+    std::cout << "Number of table entries: " << N_entries_ << "\n";
+}
 
-    std::map<int, int> table;
-    table[-1] = 0;          // spillover counter
+void Graphene::ResetTable(int row) {
+    table_.clear();
+    table_[-1] = 0;
+    table_[row] = 1;
+}
 
-    unsigned int TRR_count = 0;
+void Graphene::GenerateRefresh(int row, unsigned int clock_cycle) {
+    output_ << "0x" << gethexaddress(row, cfg_) << " TRR " << clock_cycle << "\n";
+    table_[row] = 0;
+}
 
-    unsigned int clock_cycle;
+void Graphene::UpdateTable(int row) {
+    if (table_.size() < N_entries_)
+        table_[row] = 1;
+    else {
+        table_[-1] += 1;
+
+        int min_key = find_min(table_);  // finding min element in the map
+        if (min_key != -1) {            // spillover counter > table row counter
+            // swapping spillover counter and table row
+            int temp_val = table_[min_key];
+            table_.erase(min_key);
+            table_[row] = table_[-1];
+            table_[-1] = temp_val;
+        }
+    }
+}
+
+void Graphene::CheckThresholds(int row, int clock_cycle) {
+    // check if counter is above the threshold
+    if (table_[row] >= T_) {
+        std::cout << "ATTACK DETECTED. AGRESSOR ROW: " << row << ". REFRESH COMMENCING \n";
+        GenerateRefresh(row-1, clock_cycle+1);
+        GenerateRefresh(row+1, clock_cycle+2);
+    }   
+}
+
+std::string Graphene::TraverseTrace() {
     std::string str_addr, command;
-    while (trace >> str_addr >> command >> clock_cycle) {
-        output << str_addr << " " << command << " " << clock_cycle << "\n";
+    unsigned int clock_cycle;
+
+    while (trace_ >> str_addr >> command >> clock_cycle) {
+        output_ << str_addr << " " << command << " " << clock_cycle << "\n";
 
         uint64_t hex_addr;
         std::stringstream temp;
         temp << std::hex << str_addr;
         temp >> hex_addr;
-        Address addr = cfg.AddressMapping(hex_addr);
+        Address addr = cfg_.AddressMapping(hex_addr);
 
         unsigned int last_upd = 0;
-        if (tREFW+last_upd < clock_cycle) {                 // reset table
-            table.clear();
-            table[-1] = 0;
-            table[addr.row] = 1;
-            last_upd = clock_cycle/tREFW * tREFW;
+        if (tREFW_+last_upd < clock_cycle) {
+            ResetTable(addr.row);
         }
         else {
-            if (table.find(addr.row) != table.end()) {      // row in table
-                table[addr.row] += 1;
-            }
-            else {                                          // row not in table
-                if (table.size() < N_entry)
-                    table[addr.row] = 1;
-                else {
-                    table[-1] += 1;
-
-                    int min_key = find_min(table);  // finding min element in the map
-                    if (min_key != -1) {            // spillover counter > table row counter
-                        // swapping spillover counter and table row
-                        int temp_val = table[min_key];
-                        table.erase(min_key);
-                        table[addr.row] = table[-1];
-                        table[-1] = temp_val;
-                    }
-                }
-            }
-
-            // check if counter is above the threshold
-            if (table[addr.row] >= T) {
-                std::cout << "ATTACK DETECTED. AGRESSOR ROW: " << addr.row << ". REFRESH COMMENCING \n";
-
-                output << gethexaddress(addr.row-1, cfg) << " TRR " << clock_cycle + 1 << "\n"; 
-                output << gethexaddress(addr.row+1, cfg) << " TRR " << clock_cycle + 2 << "\n";
-                table[addr.row] = 0;
-                TRR_count+=2;
-            }
+            UpdateTable(addr.row);
+            CheckThresholds(addr.row, clock_cycle);
         }
     }
-
-    trace.close();
-    output.close();
-
-    std::cout << "Total # of TRR: " << TRR_count << "\n";
-
-    return output_file;
 }
 
-
-std::string Graphene_improved(std::string config_file, std::string trace_file) {
-    Config cfg = Config(config_file, "./");
-    std::ifstream trace = std::ifstream(trace_file);
-    // Assumptions
-    float tREFW_time = 64000000; // reset window in nanosec
-    unsigned int T_rh = 50000;            // Rowhammer threshold
-
-    // Calculating W
-    unsigned int tREFW = tREFW_time / cfg.tCK;                   // reset window in clock cycles
-    unsigned int W = tREFW * (1 - cfg.tRFC/cfg.tREFI) / cfg.tRC; // max number of ACTs in a reset window
-
-    // Graphene
-    int T = T_rh / 4;           // table threshold
-    unsigned int N_entry = W / T + 1;    // number of entries in the table
-    std::cout << "Reset Window in clock cycles: " << tREFW << "\n";
-    std::cout << "Number of ACTs in a reset window: " << W << "\n";
-    std::cout << "Number of table entries: " << N_entry << "\n";
-    std::cout << "Threshold: " << T << "\n";
-
-    std::string output_file = trace_file + "_protected";
-    std::ofstream output = std::ofstream(output_file);
-
-    std::map<int, int> table;
-    table[-1] = 0;          // spillover counter
-
-    unsigned int TRR_count = 0;
-
-    unsigned int clock_cycle;
-    std::string str_addr, command;
-    while (trace >> str_addr >> command >> clock_cycle) {
-        output << str_addr << " " << command << " " << clock_cycle << "\n";
-
-        uint64_t hex_addr;
-        std::stringstream temp;
-        temp << std::hex << str_addr;
-        temp >> hex_addr;
-        Address addr = cfg.AddressMapping(hex_addr);
-
-        unsigned int last_upd = 0;
-        if (tREFW+last_upd < clock_cycle) {                 // reset table
-            table.clear();
-            table[-1] = 0;
-            table[addr.row] = 1;
-            last_upd = clock_cycle/tREFW * tREFW;
-        }
-        else {
-            if (table.find(addr.row) != table.end()) {      // row in table
-                table[addr.row] += 1;
-            }
-            else {                                          // row not in table
-                if (table.size() < N_entry)
-                    table[addr.row] = 1;
-                else {
-                    table[-1] += 1;
-
-                    int min_key = find_min(table);  // finding min element in the map
-                    if (min_key != -1) {            // spillover counter > table row counter
-                        // swapping spillover counter and table row
-                        int temp_val = table[min_key];
-                        table.erase(min_key);
-                        table[addr.row] = table[-1];
-                        table[-1] = temp_val;
-                    }
-                }
-            }
-
-            // check if counter is above the threshold
-            if (table[addr.row] >= T) {
-                std::cout << "ATTACK DETECTED. AGRESSOR ROW: " << addr.row << ". REFRESH COMMENCING \n";
-
-                output << "0x" << gethexaddress(addr.row-1, cfg) << " TRR " << clock_cycle + 1 << "\n"; 
-                output << "0x" << gethexaddress(addr.row+1, cfg) << " TRR " << clock_cycle + 2 << "\n";
-                
-                table[addr.row] = 0;
-                TRR_count+=2;
-            }
-        }
-    }
-
-    trace.close();
-    output.close();
-
-    std::cout << "Total # of TRR: " << TRR_count << "\n";
-
-    return output_file;
-}
-
-
-
-int find_min(std::map<int, int> table) {
+int Graphene::find_min(std::map<int, int> table) {
     int key = -1;
     for (auto i: table)
         if (i.second < table[key])
@@ -185,7 +105,7 @@ int find_min(std::map<int, int> table) {
     return key;
 }
 
-std::string gethexaddress(int row, Config cfg){
+std::string RowhammerCounter::gethexaddress(int row, Config cfg){
     int total_shift_bits = cfg.shift_bits + cfg.ro_pos;
     unsigned int row_unsigned = (unsigned int) row;
     unsigned int row_shifted = row_unsigned << total_shift_bits;
@@ -195,7 +115,5 @@ std::string gethexaddress(int row, Config cfg){
         rc[i] = digits[(row_shifted>>j) & 0x0f];
     return rc;
 }
-
-
 
 }
