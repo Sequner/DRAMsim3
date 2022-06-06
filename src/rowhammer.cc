@@ -17,18 +17,20 @@ RowhammerCounter::RowhammerCounter(std::string config_file,
           output_name = trace_file + "_protected";
       }
 
+RowhammerCounter::~RowhammerCounter() {
+    output_.close();
+    trace_.close();
+}
+
+
 Graphene::Graphene(std::string config_file,
                    std::string trace_file,
                    float tREFW_ns, unsigned int T_rh)
     : RowhammerCounter(config_file, trace_file, tREFW_ns, T_rh) {
         T_ = T_rh / 4;
         std::cout << "Threshold: " << T_ << "\n";
+        CreateTable();
     }
-
-Graphene::~Graphene() {
-    output_.close();
-    trace_.close();
-}
 
 void Graphene::CreateTable() {
     N_entries_ = W_ / T_ + 1;
@@ -44,22 +46,30 @@ void Graphene::ResetTable(int row) {
 
 void Graphene::GenerateRefresh(int row, unsigned int clock_cycle) {
     output_ << "0x" << gethexaddress(row, cfg_) << " TRR " << clock_cycle << "\n";
-    table_[row] = 0;
+}
+
+void Graphene::ProcessTransaction(int row) {
+    UpdateTable(row);
 }
 
 void Graphene::UpdateTable(int row) {
-    if (table_.size() < N_entries_)
-        table_[row] = 1;
+    if (table_.find(row) != table_.end()) {
+        table_[row] += 1;
+    }
     else {
-        table_[-1] += 1;
+        if (table_.size() < N_entries_)
+            table_[row] = 1;
+        else {
+            table_[-1] += 1;
 
-        int min_key = find_min(table_);  // finding min element in the map
-        if (min_key != -1) {            // spillover counter > table row counter
-            // swapping spillover counter and table row
-            int temp_val = table_[min_key];
-            table_.erase(min_key);
-            table_[row] = table_[-1];
-            table_[-1] = temp_val;
+            int min_key = find_min(table_);  // finding min element in the map
+            if (min_key != -1) {            // spillover counter > table row counter
+                // swapping spillover counter and table row
+                int temp_val = table_[min_key];
+                table_.erase(min_key);
+                table_[row] = table_[-1];
+                table_[-1] = temp_val;
+            }
         }
     }
 }
@@ -70,6 +80,7 @@ void Graphene::CheckThresholds(int row, int clock_cycle) {
         std::cout << "ATTACK DETECTED. AGRESSOR ROW: " << row << ". REFRESH COMMENCING \n";
         GenerateRefresh(row-1, clock_cycle+1);
         GenerateRefresh(row+1, clock_cycle+2);
+        table_[row] = 0;
     }   
 }
 
@@ -91,10 +102,12 @@ std::string Graphene::TraverseTrace() {
             ResetTable(addr.row);
         }
         else {
-            UpdateTable(addr.row);
+            ProcessTransaction(addr.row);
             CheckThresholds(addr.row, clock_cycle);
         }
     }
+
+    return output_name;
 }
 
 int Graphene::find_min(std::map<int, int> table) {
@@ -105,7 +118,7 @@ int Graphene::find_min(std::map<int, int> table) {
     return key;
 }
 
-std::string RowhammerCounter::gethexaddress(int row, Config cfg){
+std::string RowhammerCounter::gethexaddress(int row, Config cfg) {
     int total_shift_bits = cfg.shift_bits + cfg.ro_pos;
     unsigned int row_unsigned = (unsigned int) row;
     unsigned int row_shifted = row_unsigned << total_shift_bits;
