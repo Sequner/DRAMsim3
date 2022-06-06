@@ -377,7 +377,7 @@ void SimpleStats::UpdateEpochStats() {
         epoch_counters_["num_ref_cmds"] * config_.ref_energy_inc;
 
     doubles_["trr_energy"] = 
-        epoch_counters_["num_trr_cmds"] * config_.ref_energy_inc/config_.rows;
+        epoch_counters_["num_trr_cmds"] * config_.ref_energy_inc;
 
     doubles_["refb_energy"] =
         epoch_counters_["num_refb_cmds"] * config_.refb_energy_inc;
@@ -441,7 +441,7 @@ void SimpleStats::UpdateFinalStats() {
     doubles_["ref_energy"] = counters_["num_ref_cmds"] * config_.ref_energy_inc;
 
     doubles_["trr_energy"] = 
-        counters_["num_trr_cmds"] * config_.ref_energy_inc/config_.rows;
+        counters_["num_trr_cmds"] * config_.ref_energy_inc;
 
     doubles_["refb_energy"] =
         counters_["num_refb_cmds"] * config_.refb_energy_inc;
