@@ -49,7 +49,7 @@ void Graphene::ProcessTransaction(int row, unsigned int clock_cycle) {
     UpdateTable(row);
     // check if counter is above the threshold
     if (table_[row] >= T_) {
-        // std::cout << "ATTACK DETECTED. AGRESSOR ROW: " << row << ". REFRESH COMMENCING \n";
+        std::cout << "ATTACK DETECTED. AGRESSOR ROW: " << row << ". REFRESH COMMENCING \n";
         GenerateRefresh(row-1, clock_cycle+1);
         GenerateRefresh(row+1, clock_cycle+2);
         table_[row] = 0;
