@@ -10,6 +10,7 @@ If you use this simulator in your work, please consider cite:
 
 See [Related Work](#related-work) for more work done with this simulator.
 
+echo 
 
 ## Building and running the simulator
 

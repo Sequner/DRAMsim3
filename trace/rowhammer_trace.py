@@ -28,19 +28,35 @@ def main(args):
     
 
     victims = generateVictims(nvictims, rowbits)
-    
+    acts = dict.fromkeys(victims, 0)
+    numline = 0
+
+    refreshwindow = 101587301
+
     while(local_clock<args.trace_duration):
         for i in range(len(victims)):
             s = gethex(victims[i]-1, rowbits)
             line = s + " " + "READ" + " " + str(local_clock) + "\n"
+            numline+=1
             file.write(line)
             local_clock += 10
+            acts[victims[i]]+=1
+            
         
         for i in range((len(victims))):
             s = gethex(victims[i]+1, rowbits)
             line = s + " " + "READ" + " " + str(local_clock) + "\n"
             file.write(line)
+            numline+=1
             local_clock += 10
+            acts[victims[i]]+=1
+        
+        for i in range((len(victims))):
+            if acts[victims[i]]==50000:
+                print("Victim: " + str(victims[i]) + ". Bit flip at access: " + str(numline))
+        
+        
+            
 
  
 
