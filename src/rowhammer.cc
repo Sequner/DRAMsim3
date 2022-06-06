@@ -31,8 +31,6 @@ Graphene::Graphene(std::string config_file,
     }
 
 void Graphene::CreateTable() {
-    std::cout << "Threshold: " << T_ << "\n";
-    std::cout << "Number of table entries: " << N_entries_ << "\n";
     N_entries_ = W_ / T_ + 1;
     table_[-1] = 0;
 }
@@ -51,7 +49,7 @@ void Graphene::ProcessTransaction(int row, unsigned int clock_cycle) {
     UpdateTable(row);
     // check if counter is above the threshold
     if (table_[row] >= T_) {
-        std::cout << "ATTACK DETECTED. AGRESSOR ROW: " << row << ". REFRESH COMMENCING \n";
+        // std::cout << "ATTACK DETECTED. AGRESSOR ROW: " << row << ". REFRESH COMMENCING \n";
         GenerateRefresh(row-1, clock_cycle+1);
         GenerateRefresh(row+1, clock_cycle+2);
         table_[row] = 0;
@@ -81,8 +79,11 @@ void Graphene::UpdateTable(int row) {
 }
 
 std::string Graphene::TraverseTrace() {
+    std::cout << "Threshold: " << T_ << "\n";
+    std::cout << "Number of table entries: " << N_entries_ << "\n";
     std::string str_addr, command;
     unsigned int clock_cycle;
+    unsigned int last_upd = 0;
 
     while (trace_ >> str_addr >> command >> clock_cycle) {
         output_ << str_addr << " " << command << " " << clock_cycle << "\n";
@@ -93,10 +94,10 @@ std::string Graphene::TraverseTrace() {
         temp >> hex_addr;
         Address addr = cfg_.AddressMapping(hex_addr);
 
-        unsigned int last_upd = 0;
-        if (tREFW_+last_upd < clock_cycle) {
+        
+        if (tREFW_+last_upd <= clock_cycle) {
             ResetTable(addr.row);
-            last_upd += tREFW_;
+            last_upd = clock_cycle / tREFW_ * tREFW_;
         }
         else {
             ProcessTransaction(addr.row, clock_cycle);
@@ -140,8 +141,6 @@ void GrapheneII::ResetRow(int row) {
 }
 
 void GrapheneII::CreateTable() {
-    std::cout << "Threshold: " << T_ << "\n";
-    std::cout << "Number of table entries: " << N_entries_ << "\n";
     N_entries_ = W_ * 2 / T_ + 1; // 2 is the number of adjacent rows affected by ACT
     table_[-1] = 0;
 }
