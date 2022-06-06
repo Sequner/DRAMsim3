@@ -158,8 +158,9 @@ std::string Graphene_improved(std::string config_file, std::string trace_file) {
             if (table[addr.row] >= T) {
                 std::cout << "ATTACK DETECTED. AGRESSOR ROW: " << addr.row << ". REFRESH COMMENCING \n";
 
-                output << gethexaddress(addr.row-1, cfg) << " TRR " << clock_cycle + 1 << "\n"; 
-                output << gethexaddress(addr.row+1, cfg) << " TRR " << clock_cycle + 2 << "\n";
+                output << "0x" << gethexaddress(addr.row-1, cfg) << " TRR " << clock_cycle + 1 << "\n"; 
+                output << "0x" << gethexaddress(addr.row+1, cfg) << " TRR " << clock_cycle + 2 << "\n";
+                
                 table[addr.row] = 0;
                 TRR_count+=2;
             }
