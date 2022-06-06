@@ -26,8 +26,8 @@ int main(int argc, const char **argv) {
         parser, "trace",
         "Trace file, setting this option will ignore -s option",
         {'t', "trace"});
-    args::ValueFlag<bool> rhprot_arg(parser, "rhprot_enable", 
-                                                   "Enable rowhammer protection", 
+    args::ValueFlag<int> rhprot_arg(parser, "rhprot_enable", 
+                                                   "0 -- disabled, 1 -- graphene, 2-- graphene improved", 
                                                    {'r', "rhprot-en"}, false);
     args::Positional<std::string> config_arg(
         parser, "config", "The config file name (mandatory)");
@@ -53,10 +53,15 @@ int main(int argc, const char **argv) {
     std::string output_dir = args::get(output_dir_arg);
     std::string trace_file = args::get(trace_file_arg);
     std::string stream_type = args::get(stream_arg);
+    int rh = args::get(rhprot_arg); 
 
-    if (args::get(rhprot_arg))
+    if (rh==1){
         trace_file = Graphene(config_file, trace_file);
-
+    }
+    else if (rh==2){
+        trace_file = Graphene_improved(config_file, trace_file);
+    }
+    
     CPU *cpu;
     if (!trace_file.empty()) {
         cpu = new TraceBasedCPU(config_file, output_dir, trace_file);
