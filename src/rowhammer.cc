@@ -22,20 +22,19 @@ RowhammerCounter::~RowhammerCounter() {
     trace_.close();
 }
 
-
 Graphene::Graphene(std::string config_file,
                    std::string trace_file,
                    float tREFW_ns, unsigned int T_rh)
     : RowhammerCounter(config_file, trace_file, tREFW_ns, T_rh) {
         T_ = T_rh / 4;
-        std::cout << "Threshold: " << T_ << "\n";
         CreateTable();
     }
 
 void Graphene::CreateTable() {
+    std::cout << "Threshold: " << T_ << "\n";
+    std::cout << "Number of table entries: " << N_entries_ << "\n";
     N_entries_ = W_ / T_ + 1;
     table_[-1] = 0;
-    std::cout << "Number of table entries: " << N_entries_ << "\n";
 }
 
 void Graphene::ResetTable(int row) {
@@ -48,8 +47,15 @@ void Graphene::GenerateRefresh(int row, unsigned int clock_cycle) {
     output_ << "0x" << gethexaddress(row, cfg_) << " TRR " << clock_cycle << "\n";
 }
 
-void Graphene::ProcessTransaction(int row) {
+void Graphene::ProcessTransaction(int row, unsigned int clock_cycle) {
     UpdateTable(row);
+    // check if counter is above the threshold
+    if (table_[row] >= T_) {
+        std::cout << "ATTACK DETECTED. AGRESSOR ROW: " << row << ". REFRESH COMMENCING \n";
+        GenerateRefresh(row-1, clock_cycle+1);
+        GenerateRefresh(row+1, clock_cycle+2);
+        table_[row] = 0;
+    }   
 }
 
 void Graphene::UpdateTable(int row) {
@@ -74,16 +80,6 @@ void Graphene::UpdateTable(int row) {
     }
 }
 
-void Graphene::CheckThresholds(int row, int clock_cycle) {
-    // check if counter is above the threshold
-    if (table_[row] >= T_) {
-        std::cout << "ATTACK DETECTED. AGRESSOR ROW: " << row << ". REFRESH COMMENCING \n";
-        GenerateRefresh(row-1, clock_cycle+1);
-        GenerateRefresh(row+1, clock_cycle+2);
-        table_[row] = 0;
-    }   
-}
-
 std::string Graphene::TraverseTrace() {
     std::string str_addr, command;
     unsigned int clock_cycle;
@@ -100,10 +96,10 @@ std::string Graphene::TraverseTrace() {
         unsigned int last_upd = 0;
         if (tREFW_+last_upd < clock_cycle) {
             ResetTable(addr.row);
+            last_upd += tREFW_;
         }
         else {
-            ProcessTransaction(addr.row);
-            CheckThresholds(addr.row, clock_cycle);
+            ProcessTransaction(addr.row, clock_cycle);
         }
     }
 
@@ -127,6 +123,42 @@ std::string RowhammerCounter::gethexaddress(int row, Config cfg) {
     for (size_t i=0, j=28 ; i<8; ++i,j-=4)
         rc[i] = digits[(row_shifted>>j) & 0x0f];
     return rc;
+}
+
+GrapheneII::GrapheneII(std::string config_file,
+                   std::string trace_file,
+                   float tREFW_ns, unsigned int T_rh)
+    : Graphene(config_file, trace_file, tREFW_ns, T_rh) {
+        T_ = T_rh / 2;
+        CreateTable();
+}
+
+void GrapheneII::ResetRow(int row) {
+    if (table_.find(row) != table_.end()) {
+        table_[row] = 0;
+    }
+}
+
+void GrapheneII::CreateTable() {
+    std::cout << "Threshold: " << T_ << "\n";
+    std::cout << "Number of table entries: " << N_entries_ << "\n";
+    N_entries_ = W_ * 2 / T_ + 1; // 2 is the number of adjacent rows affected by ACT
+    table_[-1] = 0;
+}
+
+void GrapheneII::ProcessTransaction(int row, unsigned int clock_cycle) {
+    ResetRow(row);
+
+    for (int i=-1; i < 2; i += 2) {
+        UpdateTable(row+i);
+
+        // check if counter is above the threshold
+        if (table_[row+i] >= T_) {
+            std::cout << "ATTACK DETECTED. VICTIM ROW: " << row+i << ". REFRESH COMMENCING \n";
+            GenerateRefresh(row+i, clock_cycle+1);
+            table_[row+i] = 0;
+        }
+    }
 }
 
 }

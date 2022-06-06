@@ -15,7 +15,7 @@ class RowhammerCounter {
         ~RowhammerCounter();
         virtual void CreateTable(){}
         virtual std::string TraverseTrace(){return output_name;}
-        virtual void ProcessTransaction(int row){}
+        virtual void ProcessTransaction(int row, unsigned int clock_cycle){}
         virtual void UpdateTable(int row){}
         std::string gethexaddress(int row, Config cfg);
         std::string output_name;
@@ -36,15 +36,23 @@ class Graphene : public RowhammerCounter {
                 float tREFW_ns, unsigned int T_rh);
         void CreateTable() override;
         std::string TraverseTrace() override;
-        void ProcessTransaction(int row) override;
+        void ProcessTransaction(int row, unsigned int clock_cycle) override;
         void UpdateTable(int row) override;
-        void CheckThresholds(int row, int clock_cycle);
         void GenerateRefresh(int row, unsigned int clock_cycle);
         void ResetTable(int row);
         int find_min(std::map<int, int> table);
     
     protected:
         int T_;
+};
+
+class GrapheneII : public Graphene {
+    public:
+        GrapheneII(std::string config_file, std::string trace_file,
+                float tREFW_ns, unsigned int T_rh);
+        void CreateTable() override;
+        void ProcessTransaction(int row, unsigned int clock_cycle) override;
+        void ResetRow(int row);
 };
 
 }

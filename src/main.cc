@@ -55,7 +55,7 @@ int main(int argc, const char **argv) {
     std::string stream_type = args::get(stream_arg);
 
     if (args::get(rowhammer_arg)) {
-        Graphene protection(config_file, trace_file, 64000000, 50000);
+        GrapheneII protection(config_file, trace_file, 64000000, 50000);
         trace_file = protection.TraverseTrace();
     }
 
